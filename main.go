@@ -34,7 +34,7 @@ func init() {
 }
 
 func (c *MysqlConfig) validate() {
-	if c.Host == "" || c.Username == "" || c.Password == "" || c.Database == "" {
+	if c.Host == "" || c.Username == "" || c.Database == "" {
 		panic("please check mysql config")
 	}
 }

@@ -92,6 +92,15 @@ func (s Server) GetText(c *gin.Context) {
 		return
 	}
 
+	// check expiration
+	if time.Now().Sub(paste.CreatedAt) > time.Minute * time.Duration(paste.ExpirationInMinutes) {
+		// delete paste & paste text
+		db.Delete(&paste)
+		db.Delete(&pasteText)
+		message = fmt.Sprintf("short link %s expired", shortLink)
+		return
+	}
+
 	c.JSON(200, gin.H{
 		"content": pasteText.Content,
 	})
