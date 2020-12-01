@@ -16,5 +16,5 @@ func Encode() string {
 	for ; curTime > 0; curTime /= length {
 		s = string(code62[curTime % length]) + s
 	}
-	return ""
+	return s
 }

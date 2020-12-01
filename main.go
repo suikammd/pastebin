@@ -8,17 +8,18 @@ import (
 	"syscall"
 )
 
-func (c *MysqlConfig) Validate() {
-	// TODO: validate mysql conf
-}
-
 var mysqlConf MysqlConfig
 var db *gorm.DB
 
-func init()  {
+type Server struct {
+	r  *gin.Engine
+	db *gorm.DB
+}
+
+func init() {
 	// TODO: load config from json file
 	mysqlConf = MysqlConfig{
-		Host: "127.0.0.1:3306",
+		Host:     "127.0.0.1:3306",
 		Username: "root",
 		Password: "",
 		Database: "shorten_url",
@@ -31,18 +32,28 @@ func init()  {
 	}
 }
 
+func (c *MysqlConfig) Validate() {
+	// TODO: validate mysql conf
+}
+
 func main() {
 	r := gin.Default()
-	r.POST("/text", PostText)
-	r.GET("/link/:short_link", GetText)
+	s := Server{
+		r:  r,
+		db: db,
+	}
+
+	// register api
+	r.POST("/text", s.PostText)
+	r.GET("/link/:short_link", s.GetText)
 
 	go func() {
-		r.Run()
+		s.r.Run()
 	}()
 
 	sigquit := make(chan os.Signal, 1)
 	signal.Notify(sigquit, os.Interrupt, syscall.SIGTERM)
 
-	_ = <- sigquit
+	_ = <-sigquit
 	// TODO close db
 }
