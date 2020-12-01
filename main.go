@@ -24,6 +24,7 @@ func init() {
 		Password: "",
 		Database: "shorten_url",
 	}
+	mysqlConf.validate()
 
 	var err error
 	db, err = New(mysqlConf)
@@ -32,8 +33,10 @@ func init() {
 	}
 }
 
-func (c *MysqlConfig) Validate() {
-	// TODO: validate mysql conf
+func (c *MysqlConfig) validate() {
+	if c.Host == "" || c.Username == "" || c.Password == "" || c.Database == "" {
+		panic("please check mysql config")
+	}
 }
 
 func main() {
