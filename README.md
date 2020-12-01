@@ -32,4 +32,3 @@ Project Goals: For practicing system design
 
 1. store short link relations with text （RDBMS：use mysql in this project）
 2. store path with text (OBJECT STORE)
-

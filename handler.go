@@ -12,19 +12,24 @@ import (
 
 func (s Server) PostText(c *gin.Context) {
 	pasteText := &PasteText{}
+	message := ""
+	defer func() {
+		if message != "" {
+			c.JSON(400, gin.H{
+				"message": message,
+			})
+			return
+		}
+	}()
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		c.JSON(400, gin.H{
-			"message": fmt.Sprintf("meet unexpected error reading body %s, err is %s", c.Request.Body, err.Error()),
-		})
+		message = fmt.Sprintf("meet unexpected error reading body %s, err is %s", c.Request.Body, err.Error())
 		return
 	}
 
 	err = json.Unmarshal(body, pasteText)
 	if err != nil {
-		c.JSON(400, gin.H{
-			"message": fmt.Sprintf("meet unexpected error parsing body %s, err is %s", body, err.Error()),
-		})
+		message = fmt.Sprintf("meet unexpected error parsing body %s, err is %s", body, err.Error())
 		return
 	}
 
@@ -41,17 +46,13 @@ func (s Server) PostText(c *gin.Context) {
 
 	res := s.db.Create(&paste)
 	if res.Error != nil {
-		c.JSON(400, gin.H{
-			"message": fmt.Sprintf("meet unexpected error insert body into db, err is %s", err.Error()),
-		})
+		message = fmt.Sprintf("meet unexpected error insert body into db, err is %s", err.Error())
 		return
 	}
 
 	res = s.db.Create(&pasteText)
 	if res.Error != nil {
-		c.JSON(400, gin.H{
-			"message": fmt.Sprintf("meet unexpected error insert body into db, err is %s", err.Error()),
-		})
+		message = fmt.Sprintf("meet unexpected error insert body into db, err is %s", err.Error())
 		return
 	}
 
@@ -63,26 +64,32 @@ func (s Server) PostText(c *gin.Context) {
 
 func (s Server) GetText(c *gin.Context) {
 	shortLink := c.Param("short_link")
+	message := ""
+	defer func() {
+		if message != "" {
+			c.JSON(400, gin.H{
+				"message": message,
+			})
+			return
+		}
+	}()
 	if shortLink == "" {
-		c.JSON(400, gin.H{
-			"message": "no link specified",
-		})
+		message = "no link specified"
+		return
 	}
 
 	var paste Paste
 	var pasteText PasteText
 	res := db.Where("short_link = ?", shortLink).First(&paste)
 	if res.Error != nil && errors.Is(res.Error, gorm.ErrRecordNotFound) {
-		c.JSON(400, gin.H{
-			"message": fmt.Sprintf("no such record with short link %s", shortLink),
-		})
+		message = fmt.Sprintf("no such record with short link %s", shortLink)
+		return
 	}
 
 	res = db.Where("path = ?", paste.Path).First(&pasteText)
 	if res.Error != nil && errors.Is(res.Error, gorm.ErrRecordNotFound) {
-		c.JSON(400, gin.H{
-			"message": fmt.Sprintf("no such record with short link %s", shortLink),
-		})
+		message = fmt.Sprintf("no such record with short link %s", shortLink)
+		return
 	}
 
 	c.JSON(200, gin.H{
