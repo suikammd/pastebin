@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-ini/ini"
+	"github.com/suikammd/shorten-url/models"
 	"gorm.io/gorm"
 	"log"
 	"os"
@@ -11,9 +12,9 @@ import (
 )
 
 var (
-	mysqlConf MysqlConfig
-	db *gorm.DB
-	cfg *ini.File
+	mysqlConf models.MysqlConfig
+	db        *gorm.DB
+	cfg       *ini.File
 )
 
 type Server struct {
@@ -41,7 +42,7 @@ func loadDB() {
 	username := dbConf.Key("USERNAME").MustString("root")
 	password := dbConf.Key("PASSWORD").MustString("")
 	database := dbConf.Key("DATABASE").MustString("shorten_url")
-	mysqlConf = MysqlConfig{
+	mysqlConf = models.MysqlConfig{
 		Host:     host,
 		Username: username,
 		Password: password,
@@ -50,13 +51,13 @@ func loadDB() {
 
 	mysqlConf.validate()
 
-	db, err = New(mysqlConf)
+	db, err = models.New(mysqlConf)
 	if err != nil {
 		return
 	}
 }
 
-func (c *MysqlConfig) validate() {
+func (c *models.MysqlConfig) validate() {
 	if c.Host == "" || c.Username == "" || c.Database == "" {
 		panic("please check mysql config")
 	}

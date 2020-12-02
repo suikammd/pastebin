@@ -1,4 +1,4 @@
-package main
+package models
 
 type PasteText struct {
 	Content string `json:"content" gorm:"column:content"`

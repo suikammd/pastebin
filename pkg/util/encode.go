@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"time"
@@ -14,7 +14,7 @@ func Encode() string {
 
 	s := ""
 	for ; curTime > 0; curTime /= length {
-		s = string(code62[curTime % length]) + s
+		s = string(code62[curTime %length]) + s
 	}
 	return s
 }

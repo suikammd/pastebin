@@ -5,14 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/suikammd/shorten-url/models"
 	"github.com/suikammd/shorten-url/pkg/e"
+	"github.com/suikammd/shorten-url/pkg/util"
 	"gorm.io/gorm"
 	"io/ioutil"
 	"time"
 )
 
 func (s Server) PostText(c *gin.Context) {
-	pasteText := &PasteText{}
+	pasteText := &models.PasteText{}
 	message := ""
 	defer func() {
 		if message != "" {
@@ -34,10 +36,10 @@ func (s Server) PostText(c *gin.Context) {
 		return
 	}
 
-	shortLink := Encode()
+	shortLink := util.Encode()
 	path := fmt.Sprintf("/tmp/%s", shortLink)
 	pasteText.Path = path
-	paste := &Paste{
+	paste := &models.Paste{
 		ShortLink:           shortLink,
 		CreatedAt:           time.Now(),
 		ExpirationInMinutes: 10,
@@ -79,8 +81,8 @@ func (s Server) GetText(c *gin.Context) {
 		return
 	}
 
-	var paste Paste
-	var pasteText PasteText
+	var paste models.Paste
+	var pasteText models.PasteText
 	res := db.Where("short_link = ?", shortLink).First(&paste)
 	if res.Error != nil && errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		message = e.GetMsg(e.NOTFOUND)
