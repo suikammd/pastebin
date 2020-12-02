@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/suikammd/shorten-url"
 	"github.com/suikammd/shorten-url/models"
 	"github.com/suikammd/shorten-url/pkg/e"
 	"github.com/suikammd/shorten-url/pkg/util"
@@ -14,7 +13,12 @@ import (
 	"time"
 )
 
-func (s main.Server) PostText(c *gin.Context) {
+type Server struct {
+	R  *gin.Engine
+	Db *gorm.DB
+}
+
+func (s Server) PostText(c *gin.Context) {
 	pasteText := &models.PasteText{}
 	message := ""
 	defer func() {
@@ -48,13 +52,13 @@ func (s main.Server) PostText(c *gin.Context) {
 		Count:               0,
 	}
 
-	res := s.db.Create(&paste)
+	res := s.Db.Create(&paste)
 	if res.Error != nil {
 		message = e.GetMsg(e.CreateError)
 		return
 	}
 
-	res = s.db.Create(&pasteText)
+	res = s.Db.Create(&pasteText)
 	if res.Error != nil {
 		message = e.GetMsg(e.CreateError)
 		return
@@ -66,7 +70,7 @@ func (s main.Server) PostText(c *gin.Context) {
 	return
 }
 
-func (s main.Server) GetText(c *gin.Context) {
+func (s Server) GetText(c *gin.Context) {
 	shortLink := c.Param("short_link")
 	message := ""
 	defer func() {
@@ -84,13 +88,13 @@ func (s main.Server) GetText(c *gin.Context) {
 
 	var paste models.Paste
 	var pasteText models.PasteText
-	res := main.db.Where("short_link = ?", shortLink).First(&paste)
+	res := s.Db.Where("short_link = ?", shortLink).First(&paste)
 	if res.Error != nil && errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		message = e.GetMsg(e.NOTFOUND)
 		return
 	}
 
-	res = main.db.Where("path = ?", paste.Path).First(&pasteText)
+	res = s.Db.Where("path = ?", paste.Path).First(&pasteText)
 	if res.Error != nil && errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		message = e.GetMsg(e.NOTFOUND)
 		return
@@ -99,8 +103,8 @@ func (s main.Server) GetText(c *gin.Context) {
 	// check expiration
 	if time.Now().Sub(paste.CreatedAt) > time.Minute * time.Duration(paste.ExpirationInMinutes) {
 		// delete paste & paste text
-		main.db.Delete(&paste)
-		main.db.Delete(&pasteText)
+		s.Db.Delete(&paste)
+		s.Db.Delete(&pasteText)
 		message = e.GetMsg(e.EXPIRED)
 		return
 	}

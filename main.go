@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-ini/ini"
+	"github.com/suikammd/shorten-url/api"
 	"github.com/suikammd/shorten-url/models"
 	"gorm.io/gorm"
 	"log"
@@ -15,12 +16,8 @@ var (
 	mysqlConf models.MysqlConfig
 	db        *gorm.DB
 	cfg       *ini.File
+	s         api.Server
 )
-
-type Server struct {
-	r  *gin.Engine
-	db *gorm.DB
-}
 
 func init() {
 	var err error
@@ -49,7 +46,7 @@ func loadDB() {
 		Database: database,
 	}
 
-	mysqlConf.validate()
+	mysqlConf.Validate()
 
 	db, err = models.New(mysqlConf)
 	if err != nil {
@@ -57,25 +54,23 @@ func loadDB() {
 	}
 }
 
-func (c *models.MysqlConfig) validate() {
-	if c.Host == "" || c.Username == "" || c.Database == "" {
-		panic("please check mysql config")
-	}
-}
-
-func main() {
+func initRouter() {
 	r := gin.Default()
-	s := Server{
-		r:  r,
-		db: db,
+	s = api.Server{
+		R:  r,
+		Db: db,
 	}
 
 	// register api
 	r.POST("/text", s.PostText)
 	r.GET("/link/:short_link", s.GetText)
+}
+
+func main() {
+	initRouter()
 
 	go func() {
-		s.r.Run()
+		s.R.Run()
 	}()
 
 	sigquit := make(chan os.Signal, 1)

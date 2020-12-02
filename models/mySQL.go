@@ -13,6 +13,12 @@ type MysqlConfig struct {
 	Database string `json:"database"`
 }
 
+func (c MysqlConfig) Validate() {
+	if c.Host == "" || c.Username == "" || c.Database == "" {
+		panic("please check mysql config")
+	}
+}
+
 func New(config MysqlConfig) (*gorm.DB, error) {
 	// Connect postgres
 	connect := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8&loc=Local&parseTime=true",
