@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/suikammd/shorten-url/pkg/e"
 	"gorm.io/gorm"
 	"io/ioutil"
 	"time"
@@ -23,13 +24,13 @@ func (s Server) PostText(c *gin.Context) {
 	}()
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		message = fmt.Sprintf("meet unexpected error reading body %s, err is %s", c.Request.Body, err.Error())
+		message = e.GetMsg(e.ReadRequestError)
 		return
 	}
 
 	err = json.Unmarshal(body, pasteText)
 	if err != nil {
-		message = fmt.Sprintf("meet unexpected error parsing body %s, err is %s", body, err.Error())
+		message = e.GetMsg(e.ParseRequestError)
 		return
 	}
 
@@ -46,13 +47,13 @@ func (s Server) PostText(c *gin.Context) {
 
 	res := s.db.Create(&paste)
 	if res.Error != nil {
-		message = fmt.Sprintf("meet unexpected error insert body into db, err is %s", err.Error())
+		message = e.GetMsg(e.CreateError)
 		return
 	}
 
 	res = s.db.Create(&pasteText)
 	if res.Error != nil {
-		message = fmt.Sprintf("meet unexpected error insert body into db, err is %s", err.Error())
+		message = e.GetMsg(e.CreateError)
 		return
 	}
 
@@ -74,7 +75,7 @@ func (s Server) GetText(c *gin.Context) {
 		}
 	}()
 	if shortLink == "" {
-		message = "no link specified"
+		message = e.GetMsg(e.NoShortLinkError)
 		return
 	}
 
@@ -82,13 +83,13 @@ func (s Server) GetText(c *gin.Context) {
 	var pasteText PasteText
 	res := db.Where("short_link = ?", shortLink).First(&paste)
 	if res.Error != nil && errors.Is(res.Error, gorm.ErrRecordNotFound) {
-		message = fmt.Sprintf("no such record with short link %s", shortLink)
+		message = e.GetMsg(e.NOTFOUND)
 		return
 	}
 
 	res = db.Where("path = ?", paste.Path).First(&pasteText)
 	if res.Error != nil && errors.Is(res.Error, gorm.ErrRecordNotFound) {
-		message = fmt.Sprintf("no such record with short link %s", shortLink)
+		message = e.GetMsg(e.NOTFOUND)
 		return
 	}
 
@@ -97,7 +98,7 @@ func (s Server) GetText(c *gin.Context) {
 		// delete paste & paste text
 		db.Delete(&paste)
 		db.Delete(&pasteText)
-		message = fmt.Sprintf("short link %s expired", shortLink)
+		message = e.GetMsg(e.EXPIRED)
 		return
 	}
 
