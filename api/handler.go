@@ -1,10 +1,11 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/suikammd/shorten-url"
 	"github.com/suikammd/shorten-url/models"
 	"github.com/suikammd/shorten-url/pkg/e"
 	"github.com/suikammd/shorten-url/pkg/util"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-func (s Server) PostText(c *gin.Context) {
+func (s main.Server) PostText(c *gin.Context) {
 	pasteText := &models.PasteText{}
 	message := ""
 	defer func() {
@@ -65,7 +66,7 @@ func (s Server) PostText(c *gin.Context) {
 	return
 }
 
-func (s Server) GetText(c *gin.Context) {
+func (s main.Server) GetText(c *gin.Context) {
 	shortLink := c.Param("short_link")
 	message := ""
 	defer func() {
@@ -83,13 +84,13 @@ func (s Server) GetText(c *gin.Context) {
 
 	var paste models.Paste
 	var pasteText models.PasteText
-	res := db.Where("short_link = ?", shortLink).First(&paste)
+	res := main.db.Where("short_link = ?", shortLink).First(&paste)
 	if res.Error != nil && errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		message = e.GetMsg(e.NOTFOUND)
 		return
 	}
 
-	res = db.Where("path = ?", paste.Path).First(&pasteText)
+	res = main.db.Where("path = ?", paste.Path).First(&pasteText)
 	if res.Error != nil && errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		message = e.GetMsg(e.NOTFOUND)
 		return
@@ -98,8 +99,8 @@ func (s Server) GetText(c *gin.Context) {
 	// check expiration
 	if time.Now().Sub(paste.CreatedAt) > time.Minute * time.Duration(paste.ExpirationInMinutes) {
 		// delete paste & paste text
-		db.Delete(&paste)
-		db.Delete(&pasteText)
+		main.db.Delete(&paste)
+		main.db.Delete(&pasteText)
 		message = e.GetMsg(e.EXPIRED)
 		return
 	}
