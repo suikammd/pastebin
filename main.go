@@ -2,14 +2,19 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/go-ini/ini"
 	"gorm.io/gorm"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 )
 
-var mysqlConf MysqlConfig
-var db *gorm.DB
+var (
+	mysqlConf MysqlConfig
+	db *gorm.DB
+	cfg *ini.File
+)
 
 type Server struct {
 	r  *gin.Engine
@@ -17,16 +22,34 @@ type Server struct {
 }
 
 func init() {
-	// TODO: load config from json file
-	mysqlConf = MysqlConfig{
-		Host:     "127.0.0.1:3306",
-		Username: "root",
-		Password: "",
-		Database: "shorten_url",
+	var err error
+	cfg, err = ini.Load("conf/app.ini")
+	if err != nil {
+		log.Fatalf("Fail to parse 'conf/app.ini': %v", err)
 	}
+
+	loadDB()
+}
+
+func loadDB() {
+	dbConf, err := cfg.GetSection("database")
+	if err != nil {
+		log.Fatalf("Fail to get section 'database': %v", err)
+	}
+
+	host := dbConf.Key("HOST").MustString("127.0.0.1")
+	username := dbConf.Key("USERNAME").MustString("root")
+	password := dbConf.Key("PASSWORD").MustString("")
+	database := dbConf.Key("DATABASE").MustString("shorten_url")
+	mysqlConf = MysqlConfig{
+		Host:     host,
+		Username: username,
+		Password: password,
+		Database: database,
+	}
+
 	mysqlConf.validate()
 
-	var err error
 	db, err = New(mysqlConf)
 	if err != nil {
 		return
